@@ -1,0 +1,18 @@
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+alertmanager:
+  enabled: true
+
+prometheus-node-exporter:
+  enabled: true          # Node-level CPU/memory/disk metrics
+
+kube-state-metrics:
+  enabled: true          # Pod/deployment state metrics

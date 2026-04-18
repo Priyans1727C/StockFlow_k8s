@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stockflow
+  namespace: stockflow
+  labels:
+    app: stockflow
+    version: "1.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stockflow
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0          # Zero-downtime deploys
+  template:
+    metadata:
+      labels:
+        app: stockflow
+        version: "1.0"
+    spec:
+      # Spread pods across worker nodes for better availability.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: stockflow
+
+      containers:
+        - name: stockflow
+          image: priyans1727c/stockflow:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+
+          envFrom:
+            - secretRef:
+                name: stockflow-secret
+
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "128Mi"
+            limits:
+              cpu: "30m"
+              memory: "256Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+
+        - name: nginx-exporter
+          image: nginx/nginx-prometheus-exporter:1.4.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://127.0.0.1:80/stub_status
+            - -web.listen-address=:9113
+          ports:
+            - containerPort: 9113
+              name: metrics
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: stockflow-nginx-config
