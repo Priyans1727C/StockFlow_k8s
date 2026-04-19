@@ -904,7 +904,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Stockflow — Full Stack Monitor",
+  "title": "Stockflow",
   "uid": "stockflow-v1",
   "version": 1
 }

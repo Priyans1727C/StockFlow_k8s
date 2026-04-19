@@ -1,0 +1,86 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: stockflow-basic-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/part-of: stockflow
+spec:
+  groups:
+    - name: stockflow-basic-alerts
+      rules:
+        - alert: StockflowMetricsTargetDown
+          expr: max(up{namespace="stockflow", service="stockflow-service", endpoint="metrics"}) < 1
+          for: 2m
+          labels:
+            severity: critical
+            team: stockflow
+          annotations:
+            summary: Stockflow metrics target is down
+            description: Metrics endpoint for stockflow-service has been unreachable for more than 2 minutes.
+
+        - alert: StockflowEndpointsBelowReplicaCount
+          expr: sum(up{namespace="stockflow", service="stockflow-service", endpoint="metrics"} == 1) < 2
+          for: 5m
+          labels:
+            severity: warning
+            team: stockflow
+          annotations:
+            summary: Stockflow metrics endpoints below expected replicas
+            description: Fewer than 2 stockflow metrics endpoints are up for more than 5 minutes.
+
+        - alert: StockflowRunningPodsBelowDesired
+          expr: count(kube_pod_status_phase{namespace="stockflow", pod=~"stockflow-.*", phase="Running"} == 1) < 2
+          for: 5m
+          labels:
+            severity: critical
+            team: stockflow
+          annotations:
+            summary: Stockflow running pods below desired count
+            description: Running stockflow pod count stayed below 2 for more than 5 minutes.
+
+        - alert: StockflowPodsNotReady
+          expr: sum(kube_pod_status_ready{namespace="stockflow", condition="false", pod=~"stockflow-.*"}) > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: stockflow
+          annotations:
+            summary: Stockflow has non-ready pods
+            description: One or more stockflow pods have been NotReady for over 5 minutes.
+
+        - alert: StockflowHighHttpRequestRate
+          expr: sum(rate(nginx_http_requests_total{namespace="stockflow", service="stockflow-service"}[5m])) > 50
+          for: 10m
+          labels:
+            severity: warning
+            team: stockflow
+          annotations:
+            summary: High Stockflow HTTP request rate
+            description: Stockflow request rate has exceeded 50 requests/sec for more than 10 minutes.
+
+        - alert: StockflowHighActiveNginxConnections
+          expr: sum(nginx_connections_active{namespace="stockflow", service="stockflow-service"}) > 100
+          for: 10m
+          labels:
+            severity: warning
+            team: stockflow
+          annotations:
+            summary: High active NGINX connections
+            description: Active NGINX connections for stockflow-service are above 100 for over 10 minutes.
+
+        - alert: StockflowCpuNearLimit
+          expr: |
+            (
+              sum(rate(container_cpu_usage_seconds_total{namespace="stockflow", pod=~"stockflow-.*", container!="", image!=""}[5m]))
+              /
+              sum(kube_pod_container_resource_limits{namespace="stockflow", pod=~"stockflow-.*", resource="cpu"})
+            ) > 0.85
+          for: 10m
+          labels:
+            severity: warning
+            team: stockflow
+          annotations:
+            summary: Stockflow CPU usage near configured limits
+            description: Stockflow CPU usage has been above 85% of declared CPU limits for 10 minutes.

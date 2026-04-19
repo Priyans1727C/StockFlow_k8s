@@ -130,6 +130,20 @@ resource "aws_security_group" "k8s_worker_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
+    description = "HTTP for ingress entrypoint on workers"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "HTTPS for ingress entrypoint on workers"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     description = "Calico between workers"
     from_port   = 0
     to_port     = 0
@@ -178,6 +192,16 @@ resource "aws_security_group_rule" "master_kubelet_from_workers" {
   description              = "Kubelet API from workers (metrics-server scrape)"
   from_port                = 10250
   to_port                  = 10250
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.k8s_master_sg.id
+  source_security_group_id = aws_security_group.k8s_worker_sg.id
+}
+
+resource "aws_security_group_rule" "master_node_exporter_from_workers" {
+  type                     = "ingress"
+  description              = "Node Exporter from workers (Prometheus scrape)"
+  from_port                = 9100
+  to_port                  = 9100
   protocol                 = "tcp"
   security_group_id        = aws_security_group.k8s_master_sg.id
   source_security_group_id = aws_security_group.k8s_worker_sg.id

@@ -1,5 +1,5 @@
 grafana:
-  adminPassword: "<your_password>"   # Change this!
+  adminPassword: "<your_password"   # Change this!
   
   service:
     type: NodePort
