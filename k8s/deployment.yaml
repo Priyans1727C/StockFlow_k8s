@@ -34,7 +34,7 @@ spec:
       containers:
         - name: stockflow
           image: priyans1727c/stockflow:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
               name: http
