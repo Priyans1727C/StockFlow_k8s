@@ -18,6 +18,27 @@ resource "aws_security_group" "k8s_master_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
+    description = "HTTP for master ingress entrypoint"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "HTTPS for master ingress entrypoint"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "NodePort Services (public access)"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     description = "etcd server client API"
     from_port   = 2379
     to_port     = 2380
